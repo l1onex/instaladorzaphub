@@ -303,19 +303,33 @@ EOF
 #######################################
 system_docker_install() {
   print_banner
-  printf "${WHITE} 💻 Instalando Docker via script oficial (compatível com qualquer arquitetura)...${GRAY_LIGHT} "
+  printf "${WHITE} 💻 Instalando docker...${GRAY_LIGHT}"
   printf "\n\n"
 
   sleep 2
 
-  # Instalação via script oficial
-  curl -fsSL https://get.docker.com | sh
+  sudo su - root <<EOF
+  # Instala dependências
+  apt install -y apt-transport-https \
+                 ca-certificates curl \
+                 software-properties-common
 
-  # Adiciona o usuário ao grupo docker para não precisar de sudo
-  sudo usermod -aG docker $USER
-  newgrp docker
+  # Adiciona chave GPG
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 
+  # Detecta a arquitetura do sistema
+  ARCH=$(dpkg --print-architecture)
+  
+  # Adiciona repositório apropriado para a arquitetura
+  if [ "$ARCH" = "arm64" ]; then
+    add-apt-repository "deb [arch=arm64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  else
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  fi
 
+  # Atualiza e instala docker
+  apt update
+  apt install -y docker-ce docker-ce-cli containerd.io
 EOF
 
   sleep 2
